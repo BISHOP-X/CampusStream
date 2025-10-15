@@ -64,8 +64,8 @@ export function NewsCard({ news, onBookmark }: NewsCardProps) {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="text-xl">{news.author.avatar}</span>
-          <span>{news.author.name}</span>
+          <span className="text-xl">{news.author?.avatar || '👤'}</span>
+          <span>{news.author?.name || 'Unknown Author'}</span>
         </div>
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           <Clock className="h-4 w-4" />
