@@ -1,0 +1,136 @@
+import { Bell, Moon, Sun, Search, Menu, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { currentUser } from "@/lib/mockData";
+
+interface NavbarProps {
+  onToggleSidebar?: () => void;
+}
+
+export function Navbar({ onToggleSidebar }: NavbarProps) {
+  const [isDark, setIsDark] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+  const unreadCount = 2;
+
+  const toggleTheme = () => {
+    setIsDark(!isDark);
+    document.documentElement.classList.toggle("dark");
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  return (
+    <nav className="sticky top-0 z-50 glass border-b">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={onToggleSidebar}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <Link to="/dashboard" className="flex items-center gap-2">
+              <div className="w-10 h-10 gradient-primary rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                CC
+              </div>
+              <span className="font-bold text-xl hidden sm:block">CampusStream</span>
+            </Link>
+          </div>
+
+          <form onSubmit={handleSearch} className="flex-1 max-w-md mx-4 hidden md:block">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search news..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </form>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => navigate('/search')}
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+            
+            <Button variant="ghost" size="icon" onClick={toggleTheme}>
+              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              onClick={() => navigate('/notifications')}
+            >
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-accent">
+                  {unreadCount}
+                </Badge>
+              )}
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <span className="text-2xl">{currentUser.avatar}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 glass">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col">
+                    <span>{currentUser.name}</span>
+                    <span className="text-xs text-muted-foreground font-normal">
+                      {currentUser.email}
+                    </span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <User className="mr-2 h-4 w-4" />
+                  Profile & Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/bookmarks')}>
+                  <span className="mr-2">🔖</span>
+                  Bookmarks
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate('/login')} className="text-destructive">
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+}
