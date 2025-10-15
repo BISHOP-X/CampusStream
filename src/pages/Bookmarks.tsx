@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
 import { NewsCard } from "@/components/NewsCard";
+import { NoBookmarks } from "@/components/EmptyStates";
 import { mockNews } from "@/lib/mockData";
-import { Button } from "@/components/ui/button";
 
 export default function Bookmarks() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>(['2', '5']);
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>(['2', '5', '10', '18', '19']);
 
   const handleBookmark = (id: string) => {
     setBookmarkedIds((prev) =>
@@ -40,26 +40,14 @@ export default function Bookmarks() {
                 <div
                   key={news.id}
                   className="animate-slide-up"
-                  style={{ animationDelay: `${index * 0.1}s` }}
+                  style={{ animationDelay: `${index * 0.05}s` }}
                 >
                   <NewsCard news={news} onBookmark={handleBookmark} />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="glass rounded-2xl p-12 text-center animate-fade-in">
-              <div className="text-6xl mb-4">🔖</div>
-              <h3 className="text-2xl font-semibold mb-2">No bookmarks yet</h3>
-              <p className="text-muted-foreground mb-6">
-                Start saving news articles to read them later
-              </p>
-              <Button
-                onClick={() => (window.location.href = "/dashboard")}
-                className="gradient-primary"
-              >
-                Browse News
-              </Button>
-            </div>
+            <NoBookmarks />
           )}
         </main>
       </div>

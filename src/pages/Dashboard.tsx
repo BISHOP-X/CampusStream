@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
 import { NewsCard } from "@/components/NewsCard";
+import { FloatingActionButton } from "@/components/FloatingActionButton";
+import { NewsGridSkeleton } from "@/components/LoadingStates";
+import { NoNewsFound } from "@/components/EmptyStates";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { mockNews, currentUser } from "@/lib/mockData";
@@ -10,7 +13,8 @@ import { Calendar, TrendingUp } from "lucide-react";
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
-  const [bookmarkedNews, setBookmarkedNews] = useState<string[]>(['2', '5']);
+  const [bookmarkedNews, setBookmarkedNews] = useState<string[]>(['2', '5', '10', '18', '19']);
+  const [isLoading, setIsLoading] = useState(false);
 
   const filters = [
     { id: "all", label: "All News" },
@@ -101,30 +105,28 @@ export default function Dashboard() {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Latest Updates</h2>
             
-            {filteredNews.length > 0 ? (
+            {isLoading ? (
+              <NewsGridSkeleton count={6} />
+            ) : filteredNews.length > 0 ? (
               <div className="grid gap-6">
                 {filteredNews.map((news, index) => (
                   <div
                     key={news.id}
                     className="animate-slide-up"
-                    style={{ animationDelay: `${index * 0.1}s` }}
+                    style={{ animationDelay: `${index * 0.05}s` }}
                   >
                     <NewsCard news={news} onBookmark={handleBookmark} />
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="glass rounded-xl p-12 text-center">
-                <div className="text-6xl mb-4">📭</div>
-                <h3 className="text-xl font-semibold mb-2">No news found</h3>
-                <p className="text-muted-foreground">
-                  Try adjusting your filters to see more content
-                </p>
-              </div>
+              <NoNewsFound />
             )}
           </div>
         </main>
       </div>
+      
+      <FloatingActionButton />
     </div>
   );
 }

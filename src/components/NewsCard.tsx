@@ -22,10 +22,10 @@ const categoryColors: Record<string, string> = {
 
 export function NewsCard({ news, onBookmark }: NewsCardProps) {
   return (
-    <div className="glass rounded-xl p-6 hover:shadow-lg transition-smooth group">
+    <div className="glass rounded-xl p-6 hover-lift transition-smooth group touch-feedback">
       {news.priority === 'urgent' && (
-        <div className="flex items-center gap-2 mb-3 text-accent">
-          <AlertCircle className="h-4 w-4 animate-pulse-glow" />
+        <div className="flex items-center gap-2 mb-3 text-accent animate-pulse-glow">
+          <AlertCircle className="h-4 w-4" />
           <span className="text-sm font-semibold">Urgent</span>
         </div>
       )}
