@@ -14,27 +14,61 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { mockDepartments } from "@/lib/mockData";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Signup() {
   const [formData, setFormData] = useState({
-    name: "",
+    first_name: "",
+    last_name: "",
     email: "",
     password: "",
     confirmPassword: "",
-    role: "student",
+    role: "student" as 'student' | 'lecturer' | 'admin',
     department: "",
     level: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signUp } = useAuth();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure your passwords match.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
-    // Simulate signup
-    setTimeout(() => {
-      navigate("/dashboard");
-    }, 1000);
+    
+    const { error } = await signUp(formData.email, formData.password, {
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      role: formData.role,
+      department: formData.department,
+      level: formData.level || undefined,
+    });
+    
+    if (error) {
+      toast({
+        title: "Signup failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    } else {
+      toast({
+        title: "Account created!",
+        description: "You can now log in with your credentials.",
+      });
+      navigate("/login");
+    }
   };
 
   return (
@@ -57,17 +91,31 @@ export default function Signup() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">First Name</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="first_name"
+                    type="text"
+                    placeholder="John"
+                    className="pl-10"
+                    value={formData.first_name}
+                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="last_name">Last Name</Label>
                 <Input
-                  id="name"
+                  id="last_name"
                   type="text"
-                  placeholder="John Doe"
-                  className="pl-10"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Doe"
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
                   required
                 />
               </div>
@@ -93,7 +141,7 @@ export default function Signup() {
               <Label>I am a</Label>
               <RadioGroup
                 value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value })}
+                onValueChange={(value) => setFormData({ ...formData, role: value as 'student' | 'lecturer' | 'admin' })}
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="student" id="student" />

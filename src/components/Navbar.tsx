@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { currentUser } from "@/lib/mockData";
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -22,6 +22,7 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
   const [isDark, setIsDark] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const { profile, signOut } = useAuth();
   const unreadCount = 2;
 
   const toggleTheme = () => {
@@ -34,6 +35,10 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
   };
 
   return (
@@ -101,15 +106,15 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
-                  <span className="text-2xl">{currentUser.avatar}</span>
+                  <span className="text-2xl">{profile?.avatar || "👤"}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 glass">
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
-                    <span>{currentUser.name}</span>
+                    <span>{profile?.name || "User"}</span>
                     <span className="text-xs text-muted-foreground font-normal">
-                      {currentUser.email}
+                      {profile?.email}
                     </span>
                   </div>
                 </DropdownMenuLabel>
@@ -123,7 +128,7 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
                   Bookmarks
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/login')} className="text-destructive">
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                   Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
