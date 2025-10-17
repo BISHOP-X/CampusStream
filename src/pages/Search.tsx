@@ -2,35 +2,60 @@ import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
 import { NewsCard } from "@/components/NewsCard";
-import { mockNews } from "@/lib/mockData";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search as SearchIcon } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { getAnnouncements } from "@/lib/api/announcements";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+
+// Skeleton component for loading state
+const NewsGridSkeleton = () => (
+  <div className="space-y-6">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="glass rounded-2xl p-6 animate-pulse">
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <div className="h-6 bg-muted rounded w-3/4 mb-3" />
+            <div className="h-4 bg-muted rounded w-full mb-2" />
+            <div className="h-4 bg-muted rounded w-2/3" />
+          </div>
+          <div className="w-32 h-32 bg-muted rounded-lg" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
 export default function Search() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") || "");
-  const [searchResults, setSearchResults] = useState(mockNews);
 
-  useEffect(() => {
-    if (query.trim()) {
-      const filtered = mockNews.filter(
-        (news) =>
-          news.title.toLowerCase().includes(query.toLowerCase()) ||
-          news.excerpt.toLowerCase().includes(query.toLowerCase()) ||
-          news.content.toLowerCase().includes(query.toLowerCase())
-      );
-      setSearchResults(filtered);
-    } else {
-      setSearchResults(mockNews);
-    }
-  }, [query]);
+  // Fetch search results from Supabase
+  const { data: result, isLoading, error } = useQuery({
+    queryKey: ['search-results', query],
+    queryFn: () => getAnnouncements({ search: query.trim() || undefined }),
+    enabled: true, // Always fetch, but filter by query if provided
+  });
+
+  const announcements = result?.data || [];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    // Update URL with search query
+    if (query.trim()) {
+      setSearchParams({ q: query.trim() });
+    }
   };
+
+  // Update query when URL params change
+  useEffect(() => {
+    const urlQuery = searchParams.get("q") || "";
+    setQuery(urlQuery);
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -58,22 +83,67 @@ export default function Search() {
 
             {query && (
               <p className="text-muted-foreground mt-4">
-                Found {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'} for "{query}"
+                {isLoading ? (
+                  "Searching..."
+                ) : (
+                  <>
+                    Found {announcements.length || 0}{" "}
+                    {announcements.length === 1 ? 'result' : 'results'} for "{query}"
+                  </>
+                )}
               </p>
             )}
           </div>
 
-          {searchResults.length > 0 ? (
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Failed to load search results. Please try again later.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {isLoading ? (
+            <NewsGridSkeleton />
+          ) : announcements && announcements.length > 0 ? (
             <div className="space-y-6">
-              {searchResults.map((news, index) => (
-                <div
-                  key={news.id}
-                  className="animate-slide-up"
-                  style={{ animationDelay: `${index * 0.05}s` }}
-                >
-                  <NewsCard news={news} />
-                </div>
-              ))}
+              {announcements.map((announcement, index) => {
+                // Map Supabase data to NewsCard format
+                const newsData = {
+                  id: announcement.id,
+                  title: announcement.title,
+                  excerpt: announcement.content.substring(0, 150) + '...',
+                  content: announcement.content,
+                  image: announcement.image_url || '/placeholder.svg',
+                  category: announcement.category as any,
+                  priority: (announcement.priority === 'low' || announcement.priority === 'medium') 
+                    ? 'normal' 
+                    : announcement.priority as any,
+                  author: {
+                    id: announcement.author?.id || '',
+                    name: announcement.author?.name || 'Unknown',
+                    avatar: announcement.author?.avatar || '/placeholder.svg',
+                    role: 'student' as const,
+                    email: '',
+                    department: announcement.department,
+                  },
+                  publishedAt: announcement.created_at,
+                  readTime: Math.ceil(announcement.content.length / 200),
+                  views: announcement.view_count || 0,
+                  department: announcement.department,
+                };
+
+                return (
+                  <div
+                    key={announcement.id}
+                    className="animate-slide-up"
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                  >
+                    <NewsCard news={newsData} />
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="glass rounded-2xl p-12 text-center animate-fade-in">

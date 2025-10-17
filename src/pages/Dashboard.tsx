@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
 import { NewsCard } from "@/components/NewsCard";
@@ -7,20 +7,36 @@ import { NewsGridSkeleton } from "@/components/LoadingStates";
 import { NoNewsFound } from "@/components/EmptyStates";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { mockNews, currentUser } from "@/lib/mockData";
-import { Calendar, TrendingUp } from "lucide-react";
-import { testConnection } from "@/lib/testSupabase";
+import { Calendar, TrendingUp, AlertCircle, Plus, BarChart3, Shield } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getAnnouncements } from "@/lib/api/announcements";
+import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Test Supabase connection on mount
-  useEffect(() => {
-    testConnection();
-  }, []);
   const [activeFilter, setActiveFilter] = useState("all");
-  const [bookmarkedNews, setBookmarkedNews] = useState<string[]>(['2', '5', '10', '18', '19']);
-  const [isLoading, setIsLoading] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+
+  // Role checks
+  const isLecturerOrAdmin = profile?.role === 'lecturer' || profile?.role === 'admin';
+  const isAdmin = profile?.role === 'admin';
+
+  // Fetch announcements from Supabase
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['announcements', categoryFilter, departmentFilter, priorityFilter],
+    queryFn: () => getAnnouncements({
+      category: categoryFilter || undefined,
+      department: departmentFilter || undefined,
+      priority: priorityFilter || undefined,
+      limit: 50,
+    }),
+  });
 
   const filters = [
     { id: "all", label: "All News" },
@@ -30,23 +46,36 @@ export default function Dashboard() {
     { id: "academic", label: "Academic" },
   ];
 
-  const handleBookmark = (id: string) => {
-    setBookmarkedNews((prev) =>
-      prev.includes(id) ? prev.filter((nid) => nid !== id) : [...prev, id]
-    );
+  // Handle quick filter buttons
+  const handleFilterClick = (filterId: string) => {
+    setActiveFilter(filterId);
+    
+    if (filterId === "all") {
+      setCategoryFilter("");
+      setDepartmentFilter("");
+      setPriorityFilter("");
+    } else if (filterId === "department") {
+      setCategoryFilter("");
+      setDepartmentFilter(profile?.department || "");
+      setPriorityFilter("");
+    } else if (filterId === "urgent") {
+      setCategoryFilter("");
+      setDepartmentFilter("");
+      setPriorityFilter("urgent");
+    } else if (filterId === "events") {
+      setCategoryFilter("Event");
+      setDepartmentFilter("");
+      setPriorityFilter("");
+    } else if (filterId === "academic") {
+      setCategoryFilter("Academic");
+      setDepartmentFilter("");
+      setPriorityFilter("");
+    }
   };
 
-  const filteredNews = mockNews.map(news => ({
-    ...news,
-    isBookmarked: bookmarkedNews.includes(news.id)
-  })).filter((news) => {
-    if (activeFilter === "all") return true;
-    if (activeFilter === "department") return news.department === currentUser.department;
-    if (activeFilter === "urgent") return news.priority === "urgent";
-    if (activeFilter === "events") return news.category === "Event";
-    if (activeFilter === "academic") return news.category === "Academic";
-    return true;
-  });
+  const announcements = data?.data || [];
+  const urgentCount = announcements.filter(a => a.priority === 'urgent').length;
+  const eventsCount = announcements.filter(a => a.category === 'Event').length;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -59,10 +88,10 @@ export default function Dashboard() {
           {/* Welcome Banner */}
           <div className="glass rounded-2xl p-6 md:p-8 mb-8 gradient-primary animate-fade-in">
             <h1 className="text-2xl md:text-4xl font-bold mb-2 text-white">
-              Welcome back, {currentUser.name.split(' ')[0]}! 👋
+              Welcome back, {profile?.first_name || profile?.name?.split(' ')[0] || 'User'}! 👋
             </h1>
             <p className="text-white/90 text-lg">
-              You have {filteredNews.filter(n => n.priority === 'urgent').length} urgent announcements today
+              You have {urgentCount} urgent announcements today
             </p>
           </div>
 
@@ -72,7 +101,7 @@ export default function Dashboard() {
               <Button
                 key={filter.id}
                 variant={activeFilter === filter.id ? "default" : "outline"}
-                onClick={() => setActiveFilter(filter.id)}
+                onClick={() => handleFilterClick(filter.id)}
                 className={activeFilter === filter.id ? "gradient-primary" : ""}
               >
                 {filter.label}
@@ -87,14 +116,14 @@ export default function Dashboard() {
                 <span className="text-muted-foreground">Total News</span>
                 <TrendingUp className="h-5 w-5 text-primary" />
               </div>
-              <p className="text-3xl font-bold">{filteredNews.length}</p>
+              <p className="text-3xl font-bold">{isLoading ? '...' : announcements.length}</p>
             </div>
             <div className="glass rounded-xl p-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-muted-foreground">Unread</span>
-                <Badge className="bg-accent">{Math.floor(filteredNews.length * 0.3)}</Badge>
+                <span className="text-muted-foreground">Urgent</span>
+                <Badge className="bg-accent">{urgentCount}</Badge>
               </div>
-              <p className="text-3xl font-bold">{Math.floor(filteredNews.length * 0.3)}</p>
+              <p className="text-3xl font-bold">{isLoading ? '...' : urgentCount}</p>
             </div>
             <div className="glass rounded-xl p-6">
               <div className="flex items-center justify-between mb-2">
@@ -102,26 +131,115 @@ export default function Dashboard() {
                 <Calendar className="h-5 w-5 text-secondary" />
               </div>
               <p className="text-3xl font-bold">
-                {filteredNews.filter(n => n.category === 'Event').length}
+                {isLoading ? '...' : eventsCount}
               </p>
             </div>
           </div>
+
+          {/* Role-Based Quick Actions - Lecturers & Admins */}
+          {isLecturerOrAdmin && (
+            <div className="glass rounded-2xl p-6 mb-8 animate-fade-in">
+              <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <button
+                  onClick={() => navigate('/create')}
+                  className="glass rounded-xl p-6 hover:shadow-lg transition-smooth text-left group"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-smooth">
+                      <Plus className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">Create Announcement</h3>
+                      <p className="text-sm text-muted-foreground">Post news & updates</p>
+                    </div>
+                  </div>
+                </button>
+
+                {isAdmin && (
+                  <>
+                    <button
+                      onClick={() => navigate('/admin')}
+                      className="glass rounded-xl p-6 hover:shadow-lg transition-smooth text-left group"
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-smooth">
+                          <Shield className="h-6 w-6 text-purple-500" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Admin Panel</h3>
+                          <p className="text-sm text-muted-foreground">Manage system</p>
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => navigate('/admin')}
+                      className="glass rounded-xl p-6 hover:shadow-lg transition-smooth text-left group"
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-smooth">
+                          <BarChart3 className="h-6 w-6 text-green-500" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">View Analytics</h3>
+                          <p className="text-sm text-muted-foreground">System statistics</p>
+                        </div>
+                      </div>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* News Feed */}
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Latest Updates</h2>
             
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Failed to load announcements. 
+                  <Button variant="link" onClick={() => refetch()} className="ml-2">
+                    Try again
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {isLoading ? (
               <NewsGridSkeleton count={6} />
-            ) : filteredNews.length > 0 ? (
+            ) : announcements.length > 0 ? (
               <div className="grid gap-6">
-                {filteredNews.map((news, index) => (
+                {announcements.map((announcement, index) => (
                   <div
-                    key={news.id}
+                    key={announcement.id}
                     className="animate-slide-up"
                     style={{ animationDelay: `${index * 0.05}s` }}
                   >
-                    <NewsCard news={news} onBookmark={handleBookmark} />
+                    <NewsCard 
+                      news={{
+                        id: announcement.id,
+                        title: announcement.title,
+                        excerpt: announcement.excerpt,
+                        content: announcement.content,
+                        category: announcement.category as any,
+                        department: announcement.department,
+                        author: {
+                          id: announcement.author?.id || '',
+                          name: announcement.author?.name || 'Unknown',
+                          email: '',
+                          role: 'student' as const,
+                          department: announcement.department,
+                        },
+                        publishedAt: new Date(announcement.published_at),
+                        priority: announcement.priority === 'low' || announcement.priority === 'medium' ? 'normal' : announcement.priority as 'high' | 'urgent',
+                        isBookmarked: false,
+                        imageUrl: announcement.image_url,
+                      }} 
+                    />
                   </div>
                 ))}
               </div>

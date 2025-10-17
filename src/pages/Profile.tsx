@@ -5,13 +5,36 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { currentUser } from "@/lib/mockData";
-import { Camera, Save } from "lucide-react";
+import { Camera, Save, AlertCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/contexts/AuthContext";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { updateUserProfile } from "@/lib/api/users";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Profile() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [profile, setProfile] = useState(currentUser);
+  const { profile: userProfile, signOut } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Form state
+  const [formData, setFormData] = useState({
+    first_name: userProfile?.first_name || "",
+    last_name: userProfile?.last_name || "",
+    department: userProfile?.department || "",
+    level: userProfile?.level || "",
+    avatar: userProfile?.avatar || "",
+  });
+
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
@@ -19,6 +42,52 @@ export default function Profile() {
     department: true,
     events: false,
   });
+
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: (data: any) => {
+      if (!userProfile?.id) throw new Error("No user ID");
+      return updateUserProfile(userProfile.id, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Update failed",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Profile update error:", error);
+    },
+  });
+
+  const handleSaveProfile = () => {
+    updateProfileMutation.mutate(formData);
+  };
+
+  if (!userProfile) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="flex flex-1">
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          <main className="flex-1 p-4 md:p-8 max-w-4xl mx-auto w-full">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Failed to load profile. Please try refreshing the page.
+              </AlertDescription>
+            </Alert>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -49,8 +118,12 @@ export default function Profile() {
                 
                 <div className="flex items-center gap-6 mb-8">
                   <div className="relative">
-                    <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-5xl">
-                      {profile.avatar}
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
+                      {formData.avatar ? (
+                        <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{formData.first_name[0]}{formData.last_name[0]}</span>
+                      )}
                     </div>
                     <Button
                       size="icon"
@@ -61,52 +134,115 @@ export default function Profile() {
                     </Button>
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold">{profile.name}</h3>
-                    <p className="text-muted-foreground capitalize">{profile.role}</p>
+                    <h3 className="text-xl font-semibold">{userProfile.name}</h3>
+                    <p className="text-muted-foreground capitalize">{userProfile.role}</p>
+                    <p className="text-sm text-muted-foreground">{userProfile.email}</p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">Full Name</Label>
+                      <Label htmlFor="first_name">First Name</Label>
                       <Input
-                        id="name"
-                        value={profile.name}
+                        id="first_name"
+                        value={formData.first_name}
                         onChange={(e) =>
-                          setProfile({ ...profile, name: e.target.value })
+                          setFormData({ ...formData, first_name: e.target.value })
                         }
+                        placeholder="Enter first name"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
+                      <Label htmlFor="last_name">Last Name</Label>
                       <Input
-                        id="email"
-                        type="email"
-                        value={profile.email}
+                        id="last_name"
+                        value={formData.last_name}
                         onChange={(e) =>
-                          setProfile({ ...profile, email: e.target.value })
+                          setFormData({ ...formData, last_name: e.target.value })
                         }
+                        placeholder="Enter last name"
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email (Read-only)</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={userProfile.email}
+                      disabled
+                      className="bg-muted"
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="department">Department</Label>
-                      <Input id="department" value={profile.department} disabled />
+                      <Select
+                        value={formData.department}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, department: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="computer_science">Computer Science</SelectItem>
+                          <SelectItem value="engineering">Engineering</SelectItem>
+                          <SelectItem value="medicine">Medicine</SelectItem>
+                          <SelectItem value="business">Business</SelectItem>
+                          <SelectItem value="arts">Arts</SelectItem>
+                          <SelectItem value="science">Science</SelectItem>
+                          <SelectItem value="law">Law</SelectItem>
+                          <SelectItem value="education">Education</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-                    {profile.level && (
-                      <div className="space-y-2">
-                        <Label htmlFor="level">Level</Label>
-                        <Input id="level" value={profile.level} disabled />
-                      </div>
-                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="level">Level</Label>
+                      <Select
+                        value={formData.level}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, level: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="100">100 Level</SelectItem>
+                          <SelectItem value="200">200 Level</SelectItem>
+                          <SelectItem value="300">300 Level</SelectItem>
+                          <SelectItem value="400">400 Level</SelectItem>
+                          <SelectItem value="500">500 Level</SelectItem>
+                          <SelectItem value="postgraduate">Postgraduate</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
-                  <Button className="gradient-primary">
+                  <div className="space-y-2">
+                    <Label htmlFor="avatar">Avatar URL (Optional)</Label>
+                    <Input
+                      id="avatar"
+                      value={formData.avatar}
+                      onChange={(e) =>
+                        setFormData({ ...formData, avatar: e.target.value })
+                      }
+                      placeholder="https://example.com/avatar.jpg"
+                    />
+                  </div>
+
+                  <Button 
+                    className="gradient-primary" 
+                    onClick={handleSaveProfile}
+                    disabled={updateProfileMutation.isPending}
+                  >
                     <Save className="h-4 w-4 mr-2" />
-                    Save Changes
+                    {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
                   </Button>
                 </div>
               </div>
@@ -228,7 +364,7 @@ export default function Profile() {
                   <Button
                     variant="destructive"
                     className="w-full justify-start"
-                    onClick={() => (window.location.href = "/login")}
+                    onClick={() => signOut()}
                   >
                     Logout
                   </Button>

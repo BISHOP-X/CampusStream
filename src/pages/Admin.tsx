@@ -10,21 +10,143 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { mockNews } from "@/lib/mockData";
-import { Edit, Trash2, Eye, Plus } from "lucide-react";
+import { Edit, Trash2, Eye, Plus, AlertCircle, Users, FileText, TrendingUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getAnnouncements, deleteAnnouncement, getAnnouncementsCount } from "@/lib/api/announcements";
+import { getAllUsers, getUserStats } from "@/lib/api/users";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Admin() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch all announcements (admin view)
+  const { data: announcementsResult, isLoading: announcementsLoading, error: announcementsError } = useQuery({
+    queryKey: ['admin-announcements'],
+    queryFn: () => getAnnouncements({ limit: 50 }), // Get latest 50
+  });
+
+  const announcements = announcementsResult?.data || [];
+
+  // Fetch total announcement count
+  const { data: totalCountResult } = useQuery({
+    queryKey: ['total-announcements-count'],
+    queryFn: () => getAnnouncementsCount(),
+  });
+
+  // Fetch all users
+  const { data: usersResult } = useQuery({
+    queryKey: ['all-users'],
+    queryFn: getAllUsers,
+  });
+
+  const users = usersResult?.data || [];
+
+  // Fetch user stats
+  const { data: userStatsResult } = useQuery({
+    queryKey: ['user-stats'],
+    queryFn: getUserStats,
+  });
+
+  // Delete announcement mutation
+  const deleteAnnouncementMutation = useMutation({
+    mutationFn: (id: string) => deleteAnnouncement(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-announcements'] });
+      queryClient.invalidateQueries({ queryKey: ['total-announcements-count'] });
+      toast({
+        title: "Announcement deleted",
+        description: "The announcement has been deleted successfully.",
+      });
+      setDeleteDialogOpen(false);
+      setSelectedAnnouncementId(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete announcement. Please try again.",
+        variant: "destructive",
+      });
+      console.error("Delete error:", error);
+    },
+  });
+
+  const handleDeleteClick = (id: string) => {
+    setSelectedAnnouncementId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedAnnouncementId) {
+      deleteAnnouncementMutation.mutate(selectedAnnouncementId);
+    }
+  };
+
+  // Check if user is admin
+  if (!profile || profile.role !== 'admin') {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="flex flex-1">
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Access denied. This page is only accessible to administrators.
+              </AlertDescription>
+            </Alert>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   const stats = [
-    { label: "Total Announcements", value: mockNews.length, icon: "📢" },
-    { label: "Active Users", value: "1,234", icon: "👥" },
-    { label: "Pending Posts", value: "5", icon: "⏳" },
-    { label: "Engagement Rate", value: "78%", icon: "📊" },
+    { 
+      label: "Total Announcements", 
+      value: totalCountResult?.count || 0, 
+      icon: <FileText className="h-8 w-8" />,
+      color: "text-blue-500"
+    },
+    { 
+      label: "Active Users", 
+      value: userStatsResult?.data?.total || 0, 
+      icon: <Users className="h-8 w-8" />,
+      color: "text-green-500"
+    },
+    { 
+      label: "Admins", 
+      value: userStatsResult?.data?.admins || 0, 
+      icon: <Users className="h-8 w-8" />,
+      color: "text-purple-500"
+    },
+    { 
+      label: "Lecturers", 
+      value: userStatsResult?.data?.lecturers || 0, 
+      icon: <TrendingUp className="h-8 w-8" />,
+      color: "text-orange-500"
+    },
   ];
 
   return (
@@ -64,78 +186,146 @@ export default function Admin() {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-muted-foreground">{stat.label}</span>
-                  <span className="text-3xl">{stat.icon}</span>
+                  <span className={stat.color}>{stat.icon}</span>
                 </div>
                 <p className="text-3xl font-bold">{stat.value}</p>
               </div>
             ))}
           </div>
 
+          {announcementsError && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Failed to load announcements. Please try refreshing the page.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Recent Posts Table */}
           <div className="glass rounded-2xl p-6 md:p-8">
-            <h2 className="text-2xl font-bold mb-6">Recent Posts</h2>
+            <h2 className="text-2xl font-bold mb-6">All Announcements</h2>
             
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Published</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockNews.slice(0, 8).map((news) => (
-                    <TableRow key={news.id}>
-                      <TableCell className="font-medium max-w-xs truncate">
-                        {news.title}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{news.category}</Badge>
-                      </TableCell>
-                      <TableCell>{news.department}</TableCell>
-                      <TableCell>
-                        <Badge
-                          className={
-                            news.priority === "urgent"
-                              ? "bg-accent"
-                              : news.priority === "high"
-                              ? "bg-secondary"
-                              : "bg-muted"
-                          }
-                        >
-                          {news.priority}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDistanceToNow(news.publishedAt, { addSuffix: true })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => navigate(`/news/${news.id}`)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            {announcementsLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-16 bg-muted rounded animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Views</TableHead>
+                      <TableHead>Published</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {announcements.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          No announcements found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      announcements.map((announcement) => (
+                        <TableRow key={announcement.id}>
+                          <TableCell className="font-medium max-w-xs truncate">
+                            {announcement.title}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize">
+                              {announcement.category.replace(/_/g, ' ')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="capitalize">
+                            {announcement.department.replace(/_/g, ' ')}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={
+                                announcement.priority === "urgent"
+                                  ? "bg-red-500"
+                                  : announcement.priority === "high"
+                                  ? "bg-orange-500"
+                                  : announcement.priority === "medium"
+                                  ? "bg-yellow-500"
+                                  : "bg-gray-500"
+                              }
+                            >
+                              {announcement.priority}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {announcement.view_count}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {formatDistanceToNow(new Date(announcement.created_at), { addSuffix: true })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => navigate(`/news/${announcement.id}`)}
+                                title="View"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                title="Edit"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleDeleteClick(announcement.id)}
+                                disabled={deleteAnnouncementMutation.isPending}
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the announcement
+                  and remove it from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleConfirmDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </main>
       </div>
     </div>

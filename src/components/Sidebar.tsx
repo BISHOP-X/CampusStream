@@ -1,16 +1,8 @@
-import { Home, Grid3x3, Bookmark, Building2, Settings, Plus } from "lucide-react";
+import { Home, Grid3x3, Bookmark, Building2, Settings, Plus, Shield } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { currentUser } from "@/lib/mockData";
-
-const navigation = [
-  { name: "Home", href: "/dashboard", icon: Home },
-  { name: "Categories", href: "/categories", icon: Grid3x3 },
-  { name: "Bookmarks", href: "/bookmarks", icon: Bookmark },
-  { name: "Departments", href: "/departments", icon: Building2 },
-  { name: "Settings", href: "/profile", icon: Settings },
-];
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -19,7 +11,24 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const location = useLocation();
-  const isLecturerOrAdmin = currentUser.role === 'lecturer' || currentUser.role === 'admin';
+  const { profile } = useAuth();
+  
+  // Role checks
+  const isLecturerOrAdmin = profile?.role === 'lecturer' || profile?.role === 'admin';
+  const isAdmin = profile?.role === 'admin';
+
+  // Add Admin Panel to navigation for admins only
+  const navigationItems = [
+    { name: "Home", href: "/dashboard", icon: Home, roles: ['all'] },
+    { name: "Categories", href: "/categories", icon: Grid3x3, roles: ['all'] },
+    { name: "Bookmarks", href: "/bookmarks", icon: Bookmark, roles: ['all'] },
+    { name: "Departments", href: "/departments", icon: Building2, roles: ['all'] },
+    { name: "Admin Panel", href: "/admin", icon: Shield, roles: ['admin'] },
+    { name: "Settings", href: "/profile", icon: Settings, roles: ['all'] },
+  ].filter(item => 
+    item.roles.includes('all') || 
+    (profile?.role && item.roles.includes(profile.role))
+  );
 
   return (
     <>
@@ -39,18 +48,28 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         <div className="flex flex-col h-full">
           <div className="p-6 border-b">
             <div className="flex items-center gap-3">
-              <span className="text-3xl">{currentUser.avatar}</span>
+              {profile?.avatar ? (
+                <img 
+                  src={profile.avatar} 
+                  alt="Avatar" 
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-lg">
+                  {profile?.first_name?.[0]}{profile?.last_name?.[0]}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate">{currentUser.name}</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {currentUser.department}
+                <p className="font-semibold truncate">{profile?.name || 'User'}</p>
+                <p className="text-sm text-muted-foreground truncate capitalize">
+                  {profile?.department?.replace(/_/g, ' ') || 'Department'}
                 </p>
               </div>
             </div>
           </div>
 
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-            {navigation.map((item) => {
+            {navigationItems.map((item) => {
               const isActive = location.pathname === item.href;
               return (
                 <Link

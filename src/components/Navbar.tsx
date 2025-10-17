@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { getUnreadCount } from "@/lib/api/notifications";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,8 +24,17 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
   const [isDark, setIsDark] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
-  const unreadCount = 2;
+  const { user, profile, signOut } = useAuth();
+
+  // Fetch unread notifications count
+  const { data: unreadData } = useQuery({
+    queryKey: ['unread-count', user?.id],
+    queryFn: () => getUnreadCount(user!.id),
+    enabled: !!user?.id,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  const unreadCount = unreadData?.count || 0;
 
   const toggleTheme = () => {
     setIsDark(!isDark);
