@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Sidebar } from "@/components/Sidebar";
 import { NewsCard } from "@/components/NewsCard";
@@ -9,9 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { mockNews, currentUser } from "@/lib/mockData";
 import { Calendar, TrendingUp } from "lucide-react";
+import { testConnection } from "@/lib/testSupabase";
 
 export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Test Supabase connection on mount
+  useEffect(() => {
+    testConnection();
+  }, []);
   const [activeFilter, setActiveFilter] = useState("all");
   const [bookmarkedNews, setBookmarkedNews] = useState<string[]>(['2', '5', '10', '18', '19']);
   const [isLoading, setIsLoading] = useState(false);
