@@ -232,50 +232,9 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ---
 
-## 🎯 Key Talking Points (For Defense)
-
-### **Why This Architecture?**
-1. **Supabase over custom backend:** Reduces development time by 70%, handles scaling automatically
-2. **PostgreSQL RLS:** Security enforced at database level, not just frontend
-3. **React Query:** Eliminates 80% of loading state boilerplate, automatic cache invalidation
-4. **PWA:** Native app experience without $99/year App Store fees
-5. **TypeScript:** Caught 200+ potential runtime errors during development
-
-### **Scalability**
-- Supabase handles 500 concurrent users per $25/month tier
-- Vercel edge network: <50ms latency globally
-- PostgreSQL connection pooling: 1000 connections max
-- React Query caching reduces API calls by 60%
-
-### **Security Measures**
-- JWT-based authentication (industry standard)
-- Row Level Security (database-level authorization)
-- HTTPS only (TLS 1.3)
-- Environment variables (never committed to Git)
-- Prepared statements (SQL injection prevention)
-
-### **Mobile-First Justification**
-- 68% of campus users access via mobile devices
-- Touch targets: 44px minimum (WCAG AA compliance)
-- Responsive breakpoints: 640px, 768px, 1024px, 1280px
-- Tested on: iPhone 12/14, Samsung Galaxy S21, Pixel 6
-
----
 
 ## 🤝 Contributing
 
-If you want to contribute, let me know. I'll add you to the Supabase project and share environment variables.
-
-### **Recent Commits**
-- Oct 15: Service layer implementation (855 lines)
-- Oct 16: PWA integration
-- Oct 17: Social login UI
-- Oct 18: Mobile responsiveness fixes (82→92 score)
-
-### **Roadmap**
-- Social login (Google/Microsoft OAuth)
-- Push notifications
-- Analytics dashboard
-- File attachments
+If you want to contribute to this project, reach out and I'll get you set you up 
 
 — BISHOP-X
