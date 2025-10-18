@@ -86,23 +86,24 @@ export default function Dashboard() {
         
         <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
           {/* Welcome Banner */}
-          <div className="glass rounded-2xl p-6 md:p-8 mb-8 gradient-primary animate-fade-in">
-            <h1 className="text-2xl md:text-4xl font-bold mb-2 text-white">
+          <div className="glass rounded-2xl p-4 sm:p-6 md:p-8 mb-8 gradient-primary animate-fade-in">
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-2 text-white">
               Welcome back, {profile?.first_name || profile?.name?.split(' ')[0] || 'User'}! 👋
             </h1>
-            <p className="text-white/90 text-lg">
-              You have {urgentCount} urgent announcements today
+            <p className="text-white/90 text-sm sm:text-base md:text-lg">
+              You have {urgentCount} urgent announcement{urgentCount !== 1 ? 's' : ''} today
             </p>
           </div>
 
           {/* Filters */}
-          <div className="flex flex-wrap gap-2 mb-8">
+          <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap">
             {filters.map((filter) => (
               <Button
                 key={filter.id}
                 variant={activeFilter === filter.id ? "default" : "outline"}
                 onClick={() => handleFilterClick(filter.id)}
-                className={activeFilter === filter.id ? "gradient-primary" : ""}
+                size="lg"
+                className={`shrink-0 h-11 md:h-10 ${activeFilter === filter.id ? "gradient-primary" : ""}`}
               >
                 {filter.label}
               </Button>

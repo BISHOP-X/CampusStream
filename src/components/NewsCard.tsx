@@ -22,7 +22,7 @@ const categoryColors: Record<string, string> = {
 
 export function NewsCard({ news, onBookmark }: NewsCardProps) {
   return (
-    <div className="glass rounded-xl p-6 hover-lift transition-smooth group touch-feedback">
+    <div className="glass rounded-xl p-4 sm:p-6 hover-lift transition-smooth group touch-feedback">
       {news.priority === 'urgent' && (
         <div className="flex items-center gap-2 mb-3 text-accent animate-pulse-glow">
           <AlertCircle className="h-4 w-4" />
@@ -31,17 +31,17 @@ export function NewsCard({ news, onBookmark }: NewsCardProps) {
       )}
       
       <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant="outline" className={categoryColors[news.category]}>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <Badge variant="outline" className={`${categoryColors[news.category]} text-xs sm:text-sm`}>
               {news.category}
             </Badge>
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs truncate max-w-[120px]">
               {news.department}
             </Badge>
           </div>
           <Link to={`/news/${news.id}`}>
-            <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-smooth line-clamp-2">
+            <h3 className="font-bold text-base sm:text-lg mb-2 group-hover:text-primary transition-smooth line-clamp-2">
               {news.title}
             </h3>
           </Link>
@@ -50,7 +50,7 @@ export function NewsCard({ news, onBookmark }: NewsCardProps) {
           variant="ghost"
           size="icon"
           onClick={() => onBookmark?.(news.id)}
-          className="shrink-0"
+          className="shrink-0 h-10 w-10 sm:h-9 sm:w-9"
         >
           <Bookmark
             className={`h-5 w-5 ${news.isBookmarked ? 'fill-primary text-primary' : ''}`}
@@ -58,17 +58,17 @@ export function NewsCard({ news, onBookmark }: NewsCardProps) {
         </Button>
       </div>
 
-      <p className="text-muted-foreground mb-4 line-clamp-3">
+      <p className="text-muted-foreground text-sm sm:text-base mb-4 line-clamp-3">
         {news.excerpt}
       </p>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="text-xl">{news.author?.avatar || '👤'}</span>
-          <span>{news.author?.name || 'Unknown Author'}</span>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground min-w-0">
+          <span className="text-base sm:text-xl shrink-0">{news.author?.avatar || '👤'}</span>
+          <span className="truncate">{news.author?.name || 'Unknown Author'}</span>
         </div>
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-          <Clock className="h-4 w-4" />
+        <div className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground shrink-0">
+          <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
           <span>{formatDistanceToNow(news.publishedAt, { addSuffix: true })}</span>
         </div>
       </div>

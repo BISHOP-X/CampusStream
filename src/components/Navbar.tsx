@@ -124,9 +124,9 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 glass">
                 <DropdownMenuLabel>
-                  <div className="flex flex-col">
-                    <span>{profile?.name || "User"}</span>
-                    <span className="text-xs text-muted-foreground font-normal">
+                  <div className="flex flex-col min-w-0">
+                    <span className="truncate">{profile?.name || "User"}</span>
+                    <span className="text-xs text-muted-foreground font-normal truncate">
                       {profile?.email}
                     </span>
                   </div>
