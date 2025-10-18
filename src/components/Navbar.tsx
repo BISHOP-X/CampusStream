@@ -55,8 +55,8 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
   return (
     <nav className="z-40 glass border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between h-16 gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <Button
               variant="ghost"
               size="icon"
