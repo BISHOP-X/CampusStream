@@ -83,9 +83,11 @@ export default function Signup() {
 
         <div className="glass rounded-2xl p-8 shadow-lg animate-slide-up">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 gradient-primary rounded-xl flex items-center justify-center text-white font-bold text-2xl mx-auto mb-4">
-              CC
-            </div>
+            <img 
+              src="/CAMPUS-STREAM 1024X1024.png" 
+              alt="CampusStream Logo" 
+              className="w-16 h-16 rounded-xl mx-auto mb-4 object-cover"
+            />
             <h1 className="text-3xl font-bold mb-2">Create Account</h1>
             <p className="text-muted-foreground">Join CampusStream today</p>
           </div>

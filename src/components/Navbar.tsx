@@ -53,7 +53,7 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
   };
 
   return (
-    <nav className="sticky top-0 z-50 glass border-b">
+    <nav className="z-40 glass border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-4">
@@ -66,9 +66,11 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
               <Menu className="h-5 w-5" />
             </Button>
             <Link to="/dashboard" className="flex items-center gap-2">
-              <div className="w-10 h-10 gradient-primary rounded-lg flex items-center justify-center text-white font-bold text-xl">
-                CC
-              </div>
+              <img 
+                src="/CAMPUS-STREAM 1024X1024.png" 
+                alt="CampusStream Logo" 
+                className="w-10 h-10 rounded-lg object-cover"
+              />
               <span className="font-bold text-xl hidden sm:block">CampusStream</span>
             </Link>
           </div>

@@ -1,0 +1,44 @@
+{
+  "name": "CampusStream - Smart Campus News & Bulletin System",
+  "short_name": "CampusStream",
+  "description": "Stay connected with your campus. Get real-time updates, personalized news, and never miss important announcements.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "categories": ["education", "news", "social"],
+  "icons": [
+    {
+      "src": "/CAMPUS-STREAM 1024X1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/CAMPUS-STREAM 1024X1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "View latest announcements"
+    },
+    {
+      "name": "Notifications",
+      "url": "/notifications",
+      "description": "Check your notifications"
+    },
+    {
+      "name": "Bookmarks",
+      "url": "/bookmarks",
+      "description": "View saved announcements"
+    }
+  ]
+}

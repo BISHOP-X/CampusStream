@@ -1,8 +1,10 @@
-import { Home, Grid3x3, Bookmark, Building2, Settings, Plus, Shield } from "lucide-react";
+import { Home, Grid3x3, Bookmark, Building2, Settings, Plus, Shield, Download } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
+import { DownloadAppModal } from "@/components/DownloadAppModal";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -12,6 +14,7 @@ interface SidebarProps {
 export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const location = useLocation();
   const { profile } = useAuth();
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
   
   // Role checks
   const isLecturerOrAdmin = profile?.role === 'lecturer' || profile?.role === 'admin';
@@ -19,12 +22,13 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
 
   // Add Admin Panel to navigation for admins only
   const navigationItems = [
-    { name: "Home", href: "/dashboard", icon: Home, roles: ['all'] },
-    { name: "Categories", href: "/categories", icon: Grid3x3, roles: ['all'] },
-    { name: "Bookmarks", href: "/bookmarks", icon: Bookmark, roles: ['all'] },
-    { name: "Departments", href: "/departments", icon: Building2, roles: ['all'] },
-    { name: "Admin Panel", href: "/admin", icon: Shield, roles: ['admin'] },
-    { name: "Settings", href: "/profile", icon: Settings, roles: ['all'] },
+    { name: "Home", href: "/dashboard", icon: Home, roles: ['all'], isLink: true },
+    { name: "Categories", href: "/categories", icon: Grid3x3, roles: ['all'], isLink: true },
+    { name: "Bookmarks", href: "/bookmarks", icon: Bookmark, roles: ['all'], isLink: true },
+    { name: "Departments", href: "/departments", icon: Building2, roles: ['all'], isLink: true },
+    { name: "Admin Panel", href: "/admin", icon: Shield, roles: ['admin'], isLink: true },
+    { name: "Download App", href: "#download", icon: Download, roles: ['all'], isLink: false },
+    { name: "Settings", href: "/profile", icon: Settings, roles: ['all'], isLink: true },
   ].filter(item => 
     item.roles.includes('all') || 
     (profile?.role && item.roles.includes(profile.role))
@@ -41,7 +45,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
       
       <aside
         className={cn(
-          "fixed lg:sticky top-0 left-0 z-50 h-screen w-64 glass border-r transition-transform duration-300 lg:translate-x-0",
+          "fixed lg:sticky top-0 left-0 z-[60] h-screen w-64 glass border-r transition-transform duration-300 lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -71,6 +75,27 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             {navigationItems.map((item) => {
               const isActive = location.pathname === item.href;
+              
+              // Handle Download App button separately
+              if (!item.isLink) {
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => {
+                      setShowDownloadModal(true);
+                      if (onClose) onClose();
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-smooth",
+                      "hover:bg-muted"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span className="font-medium">{item.name}</span>
+                  </button>
+                );
+              }
+              
               return (
                 <Link
                   key={item.name}
@@ -89,6 +114,12 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
               );
             })}
           </nav>
+          
+          {/* Download App Modal */}
+          <DownloadAppModal 
+            open={showDownloadModal} 
+            onOpenChange={setShowDownloadModal} 
+          />
 
           {isLecturerOrAdmin && (
             <div className="p-4 border-t">
